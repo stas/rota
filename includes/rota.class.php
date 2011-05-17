@@ -32,6 +32,7 @@ class Rota {
         add_action( 'edit_user_profile_update', array( __CLASS__, 'options_update' ) );
         // Options page
         add_action( 'admin_menu', array( __CLASS__, 'menus' ) );
+        add_action( 'wp', array( __CLASS__, 'ui' ) );
     }
     
     /**
@@ -104,6 +105,55 @@ class Rota {
     }
     
     /**
+     * ui()
+     *
+     * Generates the App UI
+     */
+    function ui() {
+        $vars = array();
+        $users = array();
+        $days = self::get_days();
+        $intervals = self::get_intervals();
+        
+        foreach ( $days as $d => $dayname )
+            foreach ( $intervals as $i => $intname )
+                $users[$d][$i] = self::usersByDayInt( $d, $i );
+        
+        $vars['users'] = $users;
+        $vars['days'] = $days;
+        $vars['intervals'] = $intervals;
+        $vars['locations'] = get_option( self::$location_key );
+        self::template_render( 'ui', $vars );
+        die();
+    }
+    
+    /**
+     * usersByDayInt( $day, $interval )
+     *
+     * Generates a users list by day/interval availability using availability as a priority
+     * @param String $day, day id
+     * @param String $interval, interval id
+     * @return Mixed array of user ids list
+     */
+    function usersByDayInt( $day, $interval ) {
+        $users = array();
+        // Select only subscribers
+        $uids = get_users( array( 'fields' => 'user_id', 'role' => 'subscriber' ) );
+        foreach( $uids as $uid ){
+            $uid_opts = self::get_user_options( $uid );
+            // Check if user didn't exclude this interval
+            if( !$uid_opts[$day][$interval] ) {
+                // Calculate priority by availability options number
+                if( count( array_filter( $uid_opts[$day] ) ) == 1 )
+                    array_unshift( $users, $uid ); // Place on top those with limited options
+                else
+                    $users[] = $uid; // Place into tail those with more options
+            }
+        }
+        return $users;
+    }
+    
+    /**
      * get_location( $name )
      *
      * Find an existent location
@@ -163,7 +213,7 @@ class Rota {
         $location['name'] = sanitize_title( $l['title'] );
         $location['title'] = sanitize_text_field( $l['title'] );
         $location['size'] = intval( $l['size'] );
-        $location = array_unique( $location );
+        $location = array_filter( $location );
         
         if( count( $location ) == 3 ) {
             // On duplicate, update old location

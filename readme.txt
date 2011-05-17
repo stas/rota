@@ -21,7 +21,7 @@ Please follow the [standard installation procedure for WordPress plugins](http:/
 
 == Frequently Asked Questions ==
 
-Before asking questions, please check the [video](http://stas.github.com/simple-crm).
+Before asking questions, please check the [http://github.com/stas/rota](http://github.com/stas/rota).
 
 == Changelog ==
 
