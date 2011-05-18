@@ -182,7 +182,9 @@ class Rota {
         $vars['locations'] = $locations;
         $vars['undone_locations'] = $undone_locations;
         $vars['left_users'] = $left_users;
+        $vars['today'] = strtolower( date( 'l' ) );
         self::template_render( 'ui', $vars );
+        // Not fancy, I know :)
         die();
     }
     
