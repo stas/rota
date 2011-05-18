@@ -21,6 +21,28 @@
     <div id="container">
         <header>
             <h1><?php bloginfo('description'); ?></h1>
+            <div class="grids undone">
+                <div class="grid grid-5">
+                    <h4><?php _e( 'Left locations', 'rota' ) ?>: <?php echo count( $undone_locations ); ?></h4>
+                    <?php if( count( $undone_locations ) > 0 ) : ?>
+                    <ol>
+                        <?php foreach( $undone_locations as $ul ) : ?>
+                            <li><?php echo $ul['title']; ?></li>
+                        <?php endforeach; ?>
+                    </ol>
+                    <?php endif; ?>
+                </div>
+                <div class="grid grid-5 end">
+                    <h4><?php _e( 'Left people', 'rota' ) ?>: <?php echo count( $left_users ); ?></h4>
+                    <?php if( count( $left_users ) > 0 ) : ?>
+                    <ol>
+                        <?php foreach( $left_users as $luid ) : ?>
+                            <li><?php the_author_meta( 'display_name', $luid ); ?></li>
+                        <?php endforeach; ?>
+                    </ol>
+                    <?php endif; ?>
+                </div>
+            </div>
         </header>
         
         <div id="main" role="main">
@@ -35,8 +57,8 @@
                                     <?php foreach ( $intervals as $i => $intname ): ?>
                                         <em class="interval vertical"><?php echo $intname; ?></em>
                                         <ol class="userlist">
-                                            <?php if( count( $users[$d][$i] ) > 0 ) : ?>
-                                                <?php foreach ( $users[$d][$i] as $uid ) : ?>
+                                            <?php if( count( $users[$d][$i][ $l['name'] ] ) > 0 ) : ?>
+                                                <?php foreach ( $users[$d][$i][ $l['name'] ] as $uid ) : ?>
                                                     <li><?php the_author_meta( 'display_name', $uid ); ?></li>
                                                 <?php endforeach; ?>
                                             <?php else : ?>
