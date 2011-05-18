@@ -173,7 +173,7 @@ class Rota {
                 
                 // Save left out users
                 foreach( $userlist as $left )
-                    $left_users = array_merge( $left );
+                    $left_users = array_merge( $left_users, $left );
             }
         
         $vars['users'] = $users;
