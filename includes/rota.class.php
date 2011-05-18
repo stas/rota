@@ -133,7 +133,8 @@ class Rota {
                             // Assign first available users
                             $users[$d][$i][ $l['name'] ] = array_slice( $userlist['busy'], 0, $l['size'] );
                             // Clear userlist from assigned users
-                            $userlist['busy'] = array_diff( $users[$d][$i][ $l['name'] ], $userlist['busy'] );
+                            $userlist['busy'] = array_diff( $userlist['busy'], $users[$d][$i][ $l['name'] ] );
+                            
                         // If busy users size is not enough, assign available and update the required undone location size
                         } elseif( count( $userlist['busy'] ) < $l['size'] && count( $userlist['busy'] ) != 0 ) {
                             $busy_users = count( $userlist['busy'] );
