@@ -111,11 +111,37 @@ class Rota {
      */
     function ui() {
         $vars = array();
-        $users = array();
         $days = self::get_days();
         $intervals = self::get_intervals();
-        $intervals_num = count( $intervals );
         $locations = get_option( self::$location_key );
+        
+        // Do the scheduling
+        $results = self::doTheMath( $days, $intervals, $locations );
+        
+        $vars['users'] = $results['users'];
+        $vars['days'] = $days;
+        $vars['intervals'] = $intervals;
+        $vars['locations'] = $locations;
+        $vars['undone_locations'] =  $results['undone_locations'];
+        $vars['left_users'] =  $results['left_users'];
+        $vars['today'] = strtolower( date( 'l' ) );
+        self::template_render( 'ui', $vars );
+        // Not fancy, I know :)
+        die();
+    }
+    
+    /**
+     * doTheMath( $days, $intervals, $locations )
+     *
+     * Calculates the scheduling
+     * @param Mixed $days, the days of the schedule
+     * @param Mixed $intervals, the intervals of the schedule
+     * @param Mixed $locations, the locations of the schedule
+     * @return Mixed, the resulted userlist with left and undone users/locations
+     */
+    function doTheMath( $days, $intervals, $locations ) {
+        $users = array();
+        $intervals_num = count( $intervals );
         $undone_locations = array();
         $left_users = array();
         
@@ -176,16 +202,11 @@ class Rota {
                     $left_users = array_merge( $left_users, $left );
             }
         
-        $vars['users'] = $users;
-        $vars['days'] = $days;
-        $vars['intervals'] = $intervals;
-        $vars['locations'] = $locations;
-        $vars['undone_locations'] = $undone_locations;
-        $vars['left_users'] = $left_users;
-        $vars['today'] = strtolower( date( 'l' ) );
-        self::template_render( 'ui', $vars );
-        // Not fancy, I know :)
-        die();
+        return array(
+            'users' => $users,
+            'undone_locations' => $undone_locations,
+            'left_users' => $left_users
+        );
     }
     
     /**

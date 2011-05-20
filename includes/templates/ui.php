@@ -4,21 +4,8 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <title><?php bloginfo('name'); ?> &mdash; <?php _e( 'Rota Management', 'rota' ) ?></title>
-    <link rel="stylesheet" href="https://github.com/csswizardry/inuit.css/raw/master/css/inuit.css" id="inuitCSS">
-    <style type="text/css">
-        html { width: 99%; background: none; }
-        body { width: 90%; margin: 10px auto; background: none; color: #666; }
-        .week { border-top: 1px solid #CCC; margin-bottom: 20px; padding-top: 5px; }
-        .locations h5, .locations h6 { margin-bottom: 0; }
-        .interval { float: right; width: 10px; font-size: 10px; text-decoration: underline; }
-        .userlist { margin-left: 5px; list-style-position: inside; }
-        .fail { color: #CC0000; }
-        li.fail { list-style: none; font-size: small; }
-        .vertical { -moz-transform: rotate(90deg); -moz-transform-origin: 50% 50%; -webkit-transform: rotate(90deg); -webkit-transform-origin: 50% 50%; }
-        .locations-list ul { max-height: 200px; min-height: 30px; }
-        .locations-list ul li { list-style: disc; width: 20%; float: left; }
-        .today { background: #EEE; padding: 5px; -webkit-border-radius: 5px; -moz-border-radius: 5px; border-radius: 5px; }
-    </style>
+    <link rel="stylesheet" href="<?php echo ROTA_WEB_ROOT . '/css/inuit.css' ?>" id="inuitCSS">
+    <link rel="stylesheet" href="<?php echo ROTA_WEB_ROOT . '/css/rota.css' ?>" id="rotaCSS">
 </head>
 <body>
     <div id="container">
@@ -90,7 +77,7 @@
         </div>
         
         <footer>
-            <?php _e( 'Yes, it\'s a <a href="htt://wordpress.org/">WordPress</a>!', 'rota' ); ?> &#9996; <?php wp_loginout(); ?>.
+            <?php _e( 'Yes, it\'s a <a href="htt://wordpress.org/">WordPress</a>!', 'rota' ); ?> &#9996; <?php wp_loginout( admin_url() ); ?>.
         </footer>
     </div>
 </body>

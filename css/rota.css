@@ -1,0 +1,12 @@
+html { width: 99%; background: none; }
+body { width: 90%; margin: 10px auto; background: none; color: #666; }
+.week { border-top: 1px solid #CCC; margin-bottom: 20px; padding-top: 5px; }
+.locations h5, .locations h6 { margin-bottom: 0; }
+.interval { float: right; width: 10px; font-size: 10px; text-decoration: underline; }
+.userlist { margin-left: 5px; list-style-position: inside; }
+.fail { color: #CC0000; }
+li.fail { list-style: none; font-size: small; }
+.vertical { -moz-transform: rotate(90deg); -moz-transform-origin: 50% 50%; -webkit-transform: rotate(90deg); -webkit-transform-origin: 50% 50%; }
+.locations-list ul { max-height: 200px; min-height: 30px; }
+.locations-list ul li { list-style: disc; width: 20%; float: left; }
+.today { background: #EEE; padding: 5px; -webkit-border-radius: 5px; -moz-border-radius: 5px; border-radius: 5px; }
