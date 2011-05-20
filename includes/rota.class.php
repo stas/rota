@@ -1,19 +1,19 @@
 <?php
 class Rota {
     /**
-     * Availability Intervals
-     */
-    public static $intervals = array();
-    
-    /**
-     * Rota Days
-     */
-    public static $days = array();
-    
-    /**
      * Rota meta key
      */
     public static $user_key = 'rota_options';
+    
+    /**
+     * Rota day key
+     */
+    public static $day_key = 'rota_day';
+    
+    /**
+     * Rota availability intervals Key
+     */
+    public static $interval_key = 'rota_interval';
     
     /**
      * Rota location key
@@ -24,8 +24,6 @@ class Rota {
      * Static Constructor
      */
     function init() {
-        add_filter( 'rota_days', array( __CLASS__, 'days' ) );
-        add_filter( 'rota_intervals', array( __CLASS__, 'intervals' ) );
         add_action( 'personal_options', array( __CLASS__, 'options' ) );
         add_action( 'personal_options_update', array( __CLASS__, 'options_update' ) );
         // For Admins
@@ -40,7 +38,8 @@ class Rota {
      * @return Mixed, set of days
      */
     function get_days() {
-        return apply_filters( 'rota_days', self::$days );
+        $days = get_option( self::$day_key );
+        return apply_filters( 'rota_days', $days );
     }
     
     /**
@@ -48,7 +47,8 @@ class Rota {
      * @return Mixed, set of intervals
      */
     function get_intervals() {
-        return apply_filters( 'rota_intervals', self::$intervals );
+        $intervals = get_option( self::$interval_key );
+        return apply_filters( 'rota_intervals', $intervals );
     }
     
     /**
@@ -95,11 +95,51 @@ class Rota {
                     $flash = __( 'Locations were not updated', 'rota' );
         }
         
+        // Add day
+        if( isset( $_POST['rota_day_nonce'] ) && wp_verify_nonce( $_POST['rota_day_nonce'], 'rota' ) ) {
+            if( isset( $_POST['day'] ) && count( $_POST['day'] ) != 0 )
+                if( self::add_day( $_POST['day'] ) )
+                    $flash = __( 'Days were updated', 'rota' );
+                else
+                    $flash = __( 'Days were not updated', 'rota' );
+        }
+        
+        // Delete day
+        if( isset( $_GET['_nonce'] ) && wp_verify_nonce( $_GET['_nonce'], 'rota_delete_day' ) ) {
+            if( isset( $_GET['del_day'] ) && !empty( $_GET['del_day'] ) )
+                if( self::delete_day( $_GET['del_day'] ) )
+                    $flash = sprintf( __( 'Day: %s was deleted.', 'rota' ), $_GET['del_day'] );
+                else
+                    $flash = sprintf( __( 'Day: %s was not deleted.', 'rota' ), $_GET['del_day'] );
+        }
+        
+        // Add interval
+        if( isset( $_POST['rota_interval_nonce'] ) && wp_verify_nonce( $_POST['rota_interval_nonce'], 'rota' ) ) {
+            if( isset( $_POST['interval'] ) && count( $_POST['interval'] ) != 0 )
+                if( self::add_interval( $_POST['interval'] ) )
+                    $flash = __( 'Intervals were updated', 'rota' );
+                else
+                    $flash = __( 'Intervals were not updated', 'rota' );
+        }
+        
+        // Delete interval
+        if( isset( $_GET['_nonce'] ) && wp_verify_nonce( $_GET['_nonce'], 'rota_delete_interval' ) ) {
+            if( isset( $_GET['del_interval'] ) && !empty( $_GET['del_interval'] ) )
+                if( self::delete_interval( $_GET['del_interval'] ) )
+                    $flash = sprintf( __( 'Interval: %s was deleted.', 'rota' ), $_GET['del_interval'] );
+                else
+                    $flash = sprintf( __( 'Interval: %s was not deleted.', 'rota' ), $_GET['del_interval'] );
+        }
+        
         $vars['rota_permalink'] = menu_page_url( 'rota', false );
         $vars['edit_permalink'] = add_query_arg( '_nonce', wp_create_nonce('rota_edit'), $vars['rota_permalink'] );
         $vars['delete_permalink'] = add_query_arg( '_nonce', wp_create_nonce('rota_delete'), $vars['rota_permalink'] );
+        $vars['delete_day_permalink'] = add_query_arg( '_nonce', wp_create_nonce('rota_delete_day'), $vars['rota_permalink'] );
+        $vars['delete_interval_permalink'] = add_query_arg( '_nonce', wp_create_nonce('rota_delete_interval'), $vars['rota_permalink'] );
         $vars['flash'] = $flash;
         $vars['locations'] = get_option( self::$location_key );
+        $vars['days'] = self::get_days();
+        $vars['intervals'] = self::get_intervals();
         $vars['location'] = self::get_location( $location_name );
         self::template_render( 'settings', $vars );
     }
@@ -114,9 +154,15 @@ class Rota {
         $days = self::get_days();
         $intervals = self::get_intervals();
         $locations = get_option( self::$location_key );
+        $results = array(
+            'users' => null,
+            'undone_locations' => null,
+            'left_users' => null
+        );
         
         // Do the scheduling
-        $results = self::doTheMath( $days, $intervals, $locations );
+        if( $days && $intervals && $locations )
+            $results = self::doTheMath( $days, $intervals, $locations );
         
         $vars['users'] = $results['users'];
         $vars['days'] = $days;
@@ -145,27 +191,28 @@ class Rota {
         $undone_locations = array();
         $left_users = array();
         
-        foreach ( $days as $d => $dayname )
-            foreach ( $intervals as $i => $intname ) {
+        foreach ( $days as $d )
+            foreach ( $intervals as $i ) {
                 // Get the available users list
-                $userlist = self::usersByDayInt( $d, $i, $intervals_num );
+                $userlist = self::usersByDayInt( $d['name'], $i['name'], $intervals_num );
+                
                 foreach ( $locations as $l ){
                     // To ignore notices set the variable
-                    $users[$d][$i][ $l['name'] ] = array();
+                    $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] = array();
                     // Skip locations with 0 rota size
                     if( $l['size'] > 0 )
                         // Try to assign the needed size with busy users if number of busy users is enough big
                         if( count( $userlist['busy'] ) >= $l['size'] ) {
                             // Assign first available users
-                            $users[$d][$i][ $l['name'] ] = array_slice( $userlist['busy'], 0, $l['size'] );
+                            $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] = array_slice( $userlist['busy'], 0, $l['size'] );
                             // Clear userlist from assigned users
-                            $userlist['busy'] = array_diff( $userlist['busy'], $users[$d][$i][ $l['name'] ] );
+                            $userlist['busy'] = array_diff( $userlist['busy'], $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] );
                             
                         // If busy users size is not enough, assign available and update the required undone location size
                         } elseif( count( $userlist['busy'] ) < $l['size'] && count( $userlist['busy'] ) != 0 ) {
                             $busy_users = count( $userlist['busy'] );
                             // Get the available busy users
-                            $users[$d][$i][ $l['name'] ] = $userlist['busy'];
+                            $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] = $userlist['busy'];
                             // Reset the size of busy users
                             $userlist['busy'] = array();
                             $l['size'] -= $busy_users;
@@ -183,12 +230,12 @@ class Rota {
                     shuffle( $undone_locations );
                     foreach ( $undone_locations as $l ) {
                         // Check if the array was initiated already
-                        if( is_array( $users[$d][$i][ $l['name'] ] ) )
-                            $users[$d][$i][ $l['name'] ][] = array_shift( $userlist['free'] );
+                        if( is_array( $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] ) )
+                            $users[ $d['name'] ][ $i['name'] ][ $l['name'] ][] = array_shift( $userlist['free'] );
                         else
-                            $users[$d][$i][ $l['name'] ] = array( array_shift( $userlist['free'] ) );
+                            $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] = array( array_shift( $userlist['free'] ) );
                         // Check if userlist size was achieved
-                        if( $l['size'] == count( $users[$d][$i][ $l['name'] ] ) )
+                        if( $l['size'] == count( $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] ) )
                             // Remove the location from undone
                             unset( $undone_locations[$l_index] );
                         // Proceed with next location
@@ -225,6 +272,7 @@ class Rota {
         $uids = get_users( array( 'fields' => 'user_id', 'role' => 'subscriber' ) );
         foreach( $uids as $uid ){
             $uid_opts = self::get_user_options( $uid );
+            
             // Check if user didn't exclude this interval
             if( !$uid_opts[$day][$interval] ) {
                 // Calculate priority by availability options number
@@ -279,10 +327,110 @@ class Rota {
     }
     
     /**
+     * delete_day( $name )
+     *
+     * Find and delete an existent day
+     * @param String $name, the ID of the day
+     * @return Boolean, True on success, false on failure
+     */
+    function delete_day( $name ) {
+        $name = sanitize_title( $name );
+        $days = self::get_days();
+        for( $i = 0; $i < count( $days ); $i++ )
+            if( $days[$i]['name'] == $name ) {
+                unset( $days[$i] );
+                update_option( self::$day_key, $days );
+                return true;
+            }
+        
+        return false;
+    }
+    
+    /**
+     * delete_interval( $name )
+     *
+     * Find and delete an existent interval
+     * @param String $name, the ID of the interval
+     * @return Boolean, True on success, false on failure
+     */
+    function delete_interval( $name ) {
+        $name = sanitize_title( $name );
+        $intervals = self::get_intervals();
+        for( $i = 0; $i < count( $intervals ); $i++ )
+            if( $intervals[$i]['name'] == $name ) {
+                unset( $intervals[$i] );
+                update_option( self::$interval_key, $intervals );
+                return true;
+            }
+        
+        return false;
+    }
+    
+    /**
+     * add_day( $d )
+     * 
+     * Handle day adding
+     * @param Mixed $d, an array with day details
+     * @return Boolean, True on success, false on failure
+     */
+    function add_day( $d ) {
+        $days = get_option( self::$day_key );
+        $day = array(
+            'name' => null,
+            'title' => null
+        );
+        
+        $day['name'] = sanitize_title( $d['title'] );
+        $day['title'] = sanitize_text_field( $d['title'] );
+        $day = array_filter( $day );
+        
+        if( count( $day ) == 2 ) {
+            if( !$days )
+                update_option( self::$day_key, array( $day ) );
+            else {
+                $days[] = $day;
+                update_option( self::$day_key, $days );
+            }
+            return true;
+        } else
+            return false;
+    }
+    
+    /**
+     * add_day( $i )
+     * 
+     * Handle interval adding
+     * @param Mixed $i, an array with interval details
+     * @return Boolean, True on success, false on failure
+     */
+    function add_interval( $i ) {
+        $intervals = get_option( self::$interval_key );
+        $interval = array(
+            'name' => null,
+            'title' => null
+        );
+        
+        $interval['name'] = sanitize_title( $i['title'] );
+        $interval['title'] = sanitize_text_field( $i['title'] );
+        $interval = array_filter( $interval );
+        
+        if( count( $interval ) == 2 ) {
+            if( !$intervals )
+                update_option( self::$interval_key, array( $interval ) );
+            else {
+                $intervals[] = $interval;
+                update_option( self::$interval_key, $intervals );
+            }
+            return true;
+        } else
+            return false;
+    }
+    
+    /**
      * add_location( $l )
      * 
      * Handle locations adding
-     * @param Mixed $location, an array with location details
+     * @param Mixed $l, an array with location details
      * @return Boolean, True on success, false on failure
      */
     function add_location( $l ) {
@@ -333,8 +481,9 @@ class Rota {
         $user_options = null;
         
         $dummy_data = array();
-        foreach( $days as $d => $d_name )
-            $dummy_data[$d] = array_fill_keys( array_keys( $intervals ), null );
+        foreach( $days as $d )
+            foreach( $intervals as $i )
+                $dummy_data[ $d['name'] ][ $i['name'] ] = null;
         
         if( $user_id != null )
             $user_options = get_user_meta( $user_id, self::$user_key, true );
@@ -383,40 +532,6 @@ class Rota {
                         $options[$day][$interval] = 1;
         
         update_user_meta( $user_id, self::$user_key, maybe_serialize( $options ) );
-    }
-    
-    /**
-     * intervals( $intervals )
-     *
-     * Populates the self::$intervals with translated values
-     * @param Mixed $intervals, the initial values
-     * @return Mixed, the populated data
-     */
-    function intervals( $intervals ) {
-        return array(
-            'morning' => __( 'Morning', 'rota' ),
-            'midday' => __( 'Midday', 'rota' ),
-            'afternoon' => __( 'Afternoon', 'rota' )
-        );
-    }
-    
-    /**
-     * days( $days )
-     *
-     * Populates the self::$days with translated values
-     * @param Mixed $days, the initial values
-     * @return Mixed, the populated data
-     */
-    function days( $days ) {
-        return array(
-            'monday' => __( 'Monday', 'rota' ),
-            'tuesday' => __( 'Tuesday', 'rota' ),
-            'wednesday' => __( 'Wednesday', 'rota' ),
-            'thursday' => __( 'Thursday', 'rota' ),
-            'friday' => __( 'Friday', 'rota' ),
-            'saturday' => __( 'Saturday', 'rota' ),
-            'sunday' => __( 'Sunday', 'rota' )
-        );
     }
     
     /**

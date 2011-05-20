@@ -7,14 +7,14 @@
                 <em><small><?php _e( 'Check options when not available.', 'rota' ); ?></small></em>
                 <?php wp_nonce_field( 'rota', 'rota_nonce' ); ?>
             </th>
-            <?php foreach ( $days as $d => $d_name ) : ?>
+            <?php foreach ( $days as $d ) : ?>
                 <td>
-                    <strong><?php echo $d_name; ?></strong>
+                    <strong><?php echo $d['title']; ?></strong>
                     <ul>
-                        <?php foreach ( $intervals as $i => $i_name ) : ?>
+                        <?php foreach ( $intervals as $i ) : ?>
                         <li>
-                            <input name="rota[<?php echo $user_id; ?>][<?php echo $d; ?>][<?php echo $i; ?>]" <?php checked( $rota_options[$d][$i] ); ?> id="<?php echo "{$d}_{$i}"; ?>" type="checkbox" />
-                            <label for="<?php echo "{$d}_{$i}"; ?>"><?php echo $i_name; ?></label>
+                            <input name="rota[<?php echo $user_id; ?>][<?php echo $d['name']; ?>][<?php echo $i['name']; ?>]" <?php checked( $rota_options[ $d['name'] ][ $i['name'] ] ); ?> id="<?php echo "{$d['name']}_{$i['name']}"; ?>" type="checkbox" />
+                            <label for="<?php echo "{$d['name']}_{$i['name']}"; ?>"><?php echo $i['title']; ?></label>
                         </li>
                         <?php endforeach; ?>
                     </ul>

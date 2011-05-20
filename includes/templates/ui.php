@@ -47,18 +47,18 @@
         
         <div id="main" role="main">
             <div class="locations">
-                <?php if( $locations ) : ?>
+                <?php if( $days && $intervals && $locations ) : ?>
                     <?php foreach ( $locations as $l ) : ?>
                         <h5 class="location" id="<?php echo $l['name'] ?>"><?php echo $l['title'] ?> (<?php echo $l['size'] ?>) <a href="#top">&uarr;</a></h5>
                         <div class="week grids">
-                            <?php foreach ( $days as $d => $dayname ) : ?>
-                                <div class="day grid grid-3 <?php echo ( $d == $today ) ? 'today' : ''; ?>">
-                                    <h6><?php echo $dayname ?></h6>
-                                    <?php foreach ( $intervals as $i => $intname ): ?>
-                                        <em class="interval vertical"><?php echo $intname; ?></em>
+                            <?php foreach ( $days as $d ) : ?>
+                                <div class="day grid grid-3 <?php echo ( $d['name'] == $today ) ? 'today' : ''; ?>">
+                                    <h6><?php echo $d['title'] ?></h6>
+                                    <?php foreach ( $intervals as $i ): ?>
+                                        <em class="interval vertical"><?php echo $i['title']; ?></em>
                                         <ol class="userlist">
-                                            <?php if( count( $users[$d][$i][ $l['name'] ] ) > 0 ) : ?>
-                                                <?php foreach ( $users[$d][$i][ $l['name'] ] as $uid ) : ?>
+                                            <?php if( isset( $users[$d['name']][$i['name']][ $l['name'] ] ) && count( $users[$d['name']][$i['name']][ $l['name'] ] ) > 0 ) : ?>
+                                                <?php foreach ( $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] as $uid ) : ?>
                                                     <li><?php the_author_meta( 'display_name', $uid ); ?></li>
                                                 <?php endforeach; ?>
                                             <?php else : ?>
@@ -71,7 +71,7 @@
                         </div>
                     <?php endforeach; ?>
                 <?php else : ?>
-                    <h3 class="fail"><?php _e( 'No locations found, please add some.', 'rota' ) ?></h3>
+                    <h3 class="fail"><?php _e( 'No days or intervals or locations found, please add some.', 'rota' ) ?></h3>
                 <?php endif; ?>
             </div>
         </div>
