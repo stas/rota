@@ -244,7 +244,7 @@ class Rota {
                         // Skip locations with 0 rota size
                         if( $l['size'] > 0 && count( $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] ) < $l['size'] ) {
                             // Randomize userlist
-                            #$userlist['busy'] = self::randomize( $userlist['busy'], $l['size'] );
+                            $userlist['busy'] = self::randomize( $userlist['busy'], $l['size'] );
                             
                             $users[ $d['name'] ][ $i['name'] ][ $l['name'] ][] = array_shift( $userlist['busy'] );
                             $busy_users_count--;
@@ -266,6 +266,8 @@ class Rota {
                     // Randomize the locations to reduce the same location assignment probability
                     shuffle( $undone_locations );
                     foreach ( $undone_locations as $l ) {
+                        // Randomize free users
+                        $userlist['free'] = self::randomize( $userlist['free'], $l['size'] );
                         // Check if the array was initiated already
                         if( !is_array( $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] ) )
                             $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] = array();
