@@ -177,6 +177,44 @@ class Rota {
     }
     
     /**
+     * randomize( $list, $step )
+     *
+     * A randomization algorith, that uses $step as the entropy criterion
+     * @param Mixed $list, list to be randomized
+     * @param Int $step, the entropy criterion
+     * @return Mixed, the randomized list
+     */
+    function randomize( $list, $step ) {
+        $new_list = array();
+        $list_size = count( $list );
+        $new_list_size = 0;
+        $array = array_reverse( $list );
+        
+        // If the array is the same size as $step, return the reversed array
+        if( $list_size == $step || $step < 2 )
+            return $list;
+        
+        // Do this until the $new_list_size is the same as $list_size
+        while( $list_size >= 0 ) {
+            // Get the new index calculated using $step
+            $index = $list_size % $step;
+            // Move the index value from $list to $new_list
+            if( isset( $list[$index] ) )
+                $new_list[] = $list[$index];
+            
+            // Remove the moved value
+            unset( $list[$index] );
+            // (De/In)crement counters
+            $new_list_size++;
+            $list_size--;
+            // Rebuild the array
+            $list = array_values( $list );
+        }
+        
+        return $new_list;
+    }
+    
+    /**
      * doTheMath( $days, $intervals, $locations )
      *
      * Calculates the scheduling
@@ -195,32 +233,31 @@ class Rota {
             foreach ( $intervals as $i ) {
                 // Get the available users list
                 $userlist = self::usersByDayInt( $d['name'], $i['name'], $intervals_num );
-                
-                foreach ( $locations as $l ){
-                    // To ignore notices set the variable
-                    $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] = array();
-                    // Skip locations with 0 rota size
-                    if( $l['size'] > 0 )
-                        // Try to assign the needed size with busy users if number of busy users is enough big
-                        if( count( $userlist['busy'] ) >= $l['size'] ) {
-                            // Assign first available users
-                            $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] = array_slice( $userlist['busy'], 0, $l['size'] );
-                            // Clear userlist from assigned users
-                            $userlist['busy'] = array_diff( $userlist['busy'], $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] );
+                // Try to assign fairly busy people to $locations
+                $busy_users_count = count( $userlist['busy'] );
+                while( $busy_users_count > 0 )
+                    foreach ( $locations as $l ){
+                        // To ignore notices set the variable
+                        if( !isset( $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] ) )
+                            $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] = array();
+                        
+                        // Skip locations with 0 rota size
+                        if( $l['size'] > 0 && count( $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] ) < $l['size'] ) {
+                            // Randomize userlist
+                            #$userlist['busy'] = self::randomize( $userlist['busy'], $l['size'] );
                             
-                        // If busy users size is not enough, assign available and update the required undone location size
-                        } elseif( count( $userlist['busy'] ) < $l['size'] && count( $userlist['busy'] ) != 0 ) {
-                            $busy_users = count( $userlist['busy'] );
-                            // Get the available busy users
-                            $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] = $userlist['busy'];
-                            // Reset the size of busy users
-                            $userlist['busy'] = array();
-                            $l['size'] -= $busy_users;
+                            $users[ $d['name'] ][ $i['name'] ][ $l['name'] ][] = array_shift( $userlist['busy'] );
+                            $busy_users_count--;
+                            // Add location to $undone_locations
                             $undone_locations[ $l['name'] ] = $l;
-                        } else
-                            // Place the location for later users re-assignment
-                            $undone_locations[ $l['name'] ] = $l;
-                }
+                        }
+                        
+                        if( count( $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] ) == $l['size'] ) {
+                            if( isset( $undone_locations[ $l['name'] ] ) )
+                                // Update the $undone_locations
+                                unset( $undone_locations[ $l['name'] ] );
+                        }
+                    }
                 
                 // Cycle through all the available (free) users and try to assign them fairly across $undone_locations
                 $free_users = count( $userlist['free'] );
@@ -230,10 +267,10 @@ class Rota {
                     shuffle( $undone_locations );
                     foreach ( $undone_locations as $l ) {
                         // Check if the array was initiated already
-                        if( is_array( $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] ) )
-                            $users[ $d['name'] ][ $i['name'] ][ $l['name'] ][] = array_shift( $userlist['free'] );
-                        else
-                            $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] = array( array_shift( $userlist['free'] ) );
+                        if( !is_array( $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] ) )
+                            $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] = array();
+                        // Assign user to location
+                        $users[ $d['name'] ][ $i['name'] ][ $l['name'] ][] = array_shift( $userlist['free'] );
                         // Check if userlist size was achieved
                         if( $l['size'] == count( $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] ) )
                             // Remove the location from undone
