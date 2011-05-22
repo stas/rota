@@ -10,3 +10,4 @@ li.fail { list-style: none; font-size: small; }
 .locations-list ul { max-height: 200px; min-height: 30px; }
 .locations-list ul li { list-style: disc; width: 20%; float: left; }
 .today { background: #EEE; padding: 5px; -webkit-border-radius: 5px; -moz-border-radius: 5px; border-radius: 5px; }
+.day h6 { border-bottom: 1px solid; font-weight: bold; }

@@ -238,6 +238,10 @@ class Rota {
                 $busy_users_count = count( $userlist['busy'] );
                 while( $busy_users_count > 0 )
                     foreach ( $locations as $l ){
+                        // Stop if no more users left
+                        if( $busy_users_count == 0 )
+                            break;
+                        
                         // To ignore notices set the variable
                         if( !isset( $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] ) )
                             $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] = array();
@@ -246,42 +250,39 @@ class Rota {
                         if( $l['size'] > 0 && count( $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] ) < $l['size'] ) {
                             // Randomize userlist
                             $userlist['busy'] = self::randomize( $userlist['busy'], $r * $l['size'] );
-                            
+                            // Assign user
                             $users[ $d['name'] ][ $i['name'] ][ $l['name'] ][] = array_shift( $userlist['busy'] );
                             $busy_users_count--;
-                            // Add location to $undone_locations
-                            $undone_locations[ $l['name'] ] = $l;
-                        }
-                        
-                        if( count( $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] ) == $l['size'] ) {
-                            if( isset( $undone_locations[ $l['name'] ] ) )
-                                // Update the $undone_locations
-                                unset( $undone_locations[ $l['name'] ] );
                         }
                     }
                 
                 // Cycle through all the available (free) users and try to assign them fairly across $undone_locations
-                $free_users = count( $userlist['free'] );
-                while( $free_users > 0 ) {
-                    $l_index = 0; // Location index counter
+                $free_users_count = count( $userlist['free'] );
+                while( $free_users_count > 0 ) {
                     // Randomize the locations to reduce the same location assignment probability
-                    shuffle( $undone_locations );
-                    foreach ( $undone_locations as $l ) {
+                    foreach ( $locations as $l ) {
+                        // Stop if no more users left
+                        if( $free_users_count == 0 )
+                            break;
+                        
                         // Randomize free users
                         $userlist['free'] = self::randomize( $userlist['free'], $r * $l['size'] );
                         // Check if the array was initiated already
-                        if( !is_array( $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] ) )
+                        if( !isset( $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] ) )
                             $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] = array();
                         // Assign user to location
-                        $users[ $d['name'] ][ $i['name'] ][ $l['name'] ][] = array_shift( $userlist['free'] );
-                        // Check if userlist size was achieved
-                        if( $l['size'] == count( $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] ) )
+                        if( $l['size'] > 0 && count( $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] ) < $l['size'] ) {
+                            $users[ $d['name'] ][ $i['name'] ][ $l['name'] ][] = array_shift( $userlist['free'] );
+                            $free_users_count--;
+                        }
+                        
+                        // Location size was achieved
+                        if ( count( $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] ) == $l['size'] )
                             // Remove the location from undone
-                            unset( $undone_locations[$l_index] );
-                        // Proceed with next location
-                        $l_index++;
+                            unset( $undone_locations[ $l['name'] ] );
+                        else
+                            $undone_locations[ $l['name'] ] = $l;
                     }
-                    $free_users--;
                 }
                 
                 // Save left out users
@@ -316,7 +317,7 @@ class Rota {
             // Check if user didn't exclude this interval
             if( !$uid_opts[$day][$interval] ) {
                 // Calculate priority by availability options number
-                if( count( array_filter( $uid_opts[$day] ) ) < $intervals )
+                if( count( array_filter( $uid_opts[$day] ) ) > 0 )
                     $users['busy'][] = $uid; // A busy user
                 else
                     $users['free'][] = $uid; // A less busy user
