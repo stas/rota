@@ -323,7 +323,9 @@ class Rota {
                 $busy_users_count = count( $userlist['busy'] );
                 
                 $l_count = count( $locations );
-                while( $l_count  && $busy_users_count > 0 )
+                // If none of the user is suitable, try some failures counter
+                $failures = $busy_users_count * 2;
+                while( $failures > 0 && $l_count  && $busy_users_count > 0 )
                     foreach ( $locations as $l ){
                         $size = self::hasDelta( $deltas, $l['name'], $d['name'], $i['name'], $l['size'] );
                         
@@ -342,7 +344,8 @@ class Rota {
                             // Assign user
                             $users[ $d['name'] ][ $i['name'] ][ $l['name'] ][] = array_shift( $userlist['busy'] );
                             $busy_users_count--;
-                        }
+                        } else
+                            $failures--;
                         
                         // Location size was achieved
                         if ( count( $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] ) >= $size )
@@ -357,9 +360,10 @@ class Rota {
                 // Cycle through all the available (free) users and try to assign them fairly across $undone_locations
                 $free_users_count = count( $userlist['free'] );
                 $l_count = array_map( 'count', $undone_locations );
-                // If none of the user is suitable, try 3 more times than fail
-                $failures = $free_users_count + 3;
-                while( $failures && $l_count && $free_users_count > 0 ) {
+                
+                // If none of the user is suitable, try some failures counter
+                $failures = $free_users_count * 2;
+                while( $failures > 0 && $l_count && $free_users_count > 0 ) {
                     // Randomize the locations to reduce the same location assignment probability
                     foreach ( $locations as $l ) {
                         $size = self::hasDelta( $deltas, $l['name'], $d['name'], $i['name'], $l['size'] );
