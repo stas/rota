@@ -357,7 +357,9 @@ class Rota {
                 // Cycle through all the available (free) users and try to assign them fairly across $undone_locations
                 $free_users_count = count( $userlist['free'] );
                 $l_count = array_map( 'count', $undone_locations );
-                while( $l_count && $free_users_count > 0 ) {
+                // If none of the user is suitable, try 3 more times than fail
+                $failures = $free_users_count + 3;
+                while( $failures && $l_count && $free_users_count > 0 ) {
                     // Randomize the locations to reduce the same location assignment probability
                     foreach ( $locations as $l ) {
                         $size = self::hasDelta( $deltas, $l['name'], $d['name'], $i['name'], $l['size'] );
@@ -375,7 +377,9 @@ class Rota {
                         if( $size > 0 && count( $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] ) < $size ) {
                             $users[ $d['name'] ][ $i['name'] ][ $l['name'] ][] = array_shift( $userlist['free'] );
                             $free_users_count--;
-                        }
+                        } else
+                            // Nr. of failures left
+                            $failures--;
                         
                         // Location size was achieved
                         if ( count( $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] ) >= $size )
@@ -386,6 +390,7 @@ class Rota {
                         
                         $l_count = array_map( 'count', $undone_locations );
                     }
+                    
                 }
                 
                 // Save left out users
