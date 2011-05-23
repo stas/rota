@@ -605,7 +605,7 @@ class Rota {
             'size' => null
         );
         
-        $delta['name'] = sanitize_title( time() );
+        $delta['name'] = sanitize_title( "d" . time() );
         $delta['location'] = sanitize_title( $d['location'] );
         $delta['day'] = sanitize_title( $d['day'] );
         $delta['interval'] = sanitize_title( $d['interval'] );
