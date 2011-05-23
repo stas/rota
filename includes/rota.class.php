@@ -87,7 +87,8 @@ class Rota {
                     foreach ( $intervals as $i )
                         $filled_deltas[ $dd['location'] ][ $day ][ $i['name'] ] = $dd['size'];
             else
-                $filled_deltas[ $dd['location'] ][ $dd['day'] ][ $dd['interval'] ] = $dd['size'];
+                foreach( $filled_deltas[ $dd['location'] ] as $day => $interval )
+                    $filled_deltas[ $dd['location'] ][ $day ][ $dd['interval'] ] = $dd['size'];
         }
         
         return apply_filters( 'rota_deltas', $filled_deltas );
