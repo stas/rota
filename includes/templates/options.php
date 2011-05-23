@@ -1,11 +1,14 @@
-<table class="form-table">
+<table class="form-table rota-options">
     <tbody>
         <tr>
             <th scope="row">
                 <?php _e( 'Rota Availability', 'rota' ); ?>
                 <br/>
-                <em><small><?php _e( 'Check options when not available.', 'rota' ); ?></small></em>
+                <em><small><?php _e( 'Check options when <strong>not</strong> available.', 'rota' ); ?></small></em>
                 <?php wp_nonce_field( 'rota', 'rota_nonce' ); ?>
+                <br/>
+                <a href="#" id="rota-check-all" class="button"><?php _e( 'Check all', 'rota' ); ?></a>
+                <a href="#" id="rota-uncheck-all" class="button"><?php _e( 'Uncheck all', 'rota' ); ?></a>
             </th>
             <?php foreach ( $days as $d ) : ?>
                 <td>
@@ -23,3 +26,11 @@
         </tr>
     </tbody>
 </table>
+<script type="text/javascript">
+    jQuery( '#rota-check-all' ).click( function() {
+        jQuery( '.rota-options input[type="checkbox"]' ).attr( 'checked', 'on' );
+    });
+    jQuery( '#rota-uncheck-all' ).click( function() {
+        jQuery( '.rota-options input[type="checkbox"]' ).attr( 'checked', false );
+    });
+</script>

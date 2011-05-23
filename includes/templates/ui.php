@@ -77,7 +77,7 @@
         </div>
         
         <footer>
-            <?php _e( 'Yes, it\'s a <a href="htt://wordpress.org/">WordPress</a>!', 'rota' ); ?> &#9996; <?php wp_loginout( admin_url() ); ?>.
+            <?php _e( 'Yes, it\'s a <a href="htt://wordpress.org/">WordPress</a>!', 'rota' ); ?> &#9996; <?php wp_loginout( admin_url( 'options-general.php?page=rota' ) ); ?>.
         </footer>
     </div>
 </body>
