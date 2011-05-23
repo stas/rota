@@ -279,6 +279,24 @@ class Rota {
     }
     
     /**
+     * hasDelta( $location, $day, $interval, $failsafe )
+     * 
+     * Checks for a delta for $location, at $day with $interval, returns $failsafe if none
+     * @param String $location
+     * @param String $day
+     * @param String $interval
+     * @param Int $failsafe, default size
+     * @return Int new size, or $failsafe on none
+     */
+    function hasDelta( $deltas, $location, $day, $interval, $failsafe ) {
+        if( isset( $deltas[ $location ] ) )
+            if( isset( $deltas[ $location ][ $day ] ) )
+                if( isset( $deltas[ $location ][ $day ][ $interval ] ) )
+                    return $deltas[ $location ][ $day ][ $interval ];
+        return $failsafe;
+    }
+    
+    /**
      * doTheMath( $days, $intervals, $locations, $deltas )
      *
      * Calculates the scheduling
@@ -290,19 +308,22 @@ class Rota {
      */
     function doTheMath( $days, $intervals, $locations, $deltas ) {
         $users = array();
-        $intervals_num = count( $intervals );
         $undone_locations = array();
         $left_users = array();
         
         foreach ( $days as $d )
             foreach ( $intervals as $i ) {
                 // Get the available users list
-                $userlist = self::usersByDayInt( $d['name'], $i['name'], $intervals_num );
+                $userlist = self::usersByDayInt( $d['name'], $i['name'] );
                 $r = array_search( $i, $intervals ) + array_search( $d, $days );
                 // Try to assign fairly busy people to $locations
                 $busy_users_count = count( $userlist['busy'] );
-                while( $busy_users_count > 0 )
+                
+                $l_count = count( $locations );
+                while( $l_count  && $busy_users_count > 0 )
                     foreach ( $locations as $l ){
+                        $size = self::hasDelta( $deltas, $l['name'], $d['name'], $i['name'], $l['size'] );
+                        
                         // Stop if no more users left
                         if( $busy_users_count == 0 )
                             break;
@@ -312,20 +333,32 @@ class Rota {
                             $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] = array();
                         
                         // Skip locations with 0 rota size
-                        if( $l['size'] > 0 && count( $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] ) < $l['size'] ) {
+                        if( $size > 0 && count( $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] ) < $size ) {
                             // Randomize userlist
                             $userlist['busy'] = self::randomize( $userlist['busy'], $r * $l['size'] );
                             // Assign user
                             $users[ $d['name'] ][ $i['name'] ][ $l['name'] ][] = array_shift( $userlist['busy'] );
                             $busy_users_count--;
                         }
+                        
+                        // Location size was achieved
+                        if ( count( $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] ) >= $size )
+                            // Remove the location from undone
+                            unset( $undone_locations[ $l['name'] ] );
+                        else
+                            $undone_locations[ $l['name'] ] = $l;
+                        
+                        $l_count = count( $undone_locations );
                     }
                 
                 // Cycle through all the available (free) users and try to assign them fairly across $undone_locations
                 $free_users_count = count( $userlist['free'] );
-                while( $free_users_count > 0 ) {
+                $l_count = count( $undone_locations );
+                while( $l_count && $free_users_count > 0 ) {
                     // Randomize the locations to reduce the same location assignment probability
                     foreach ( $locations as $l ) {
+                        $size = self::hasDelta( $deltas, $l['name'], $d['name'], $i['name'], $l['size'] );
+                        
                         // Stop if no more users left
                         if( $free_users_count == 0 )
                             break;
@@ -336,17 +369,19 @@ class Rota {
                         if( !isset( $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] ) )
                             $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] = array();
                         // Assign user to location
-                        if( $l['size'] > 0 && count( $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] ) < $l['size'] ) {
+                        if( $size > 0 && count( $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] ) < $size ) {
                             $users[ $d['name'] ][ $i['name'] ][ $l['name'] ][] = array_shift( $userlist['free'] );
                             $free_users_count--;
                         }
                         
                         // Location size was achieved
-                        if ( count( $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] ) == $l['size'] )
+                        if ( count( $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] ) >= $size )
                             // Remove the location from undone
                             unset( $undone_locations[ $l['name'] ] );
                         else
                             $undone_locations[ $l['name'] ] = $l;
+                        
+                        $l_count = count( $undone_locations );
                     }
                 }
                 
@@ -358,7 +393,7 @@ class Rota {
         return array(
             'users' => $users,
             'undone_locations' => $undone_locations,
-            'left_users' => $left_users
+            'left_users' => array_unique( $left_users )
         );
     }
     
@@ -368,10 +403,9 @@ class Rota {
      * Generates a users list by day/interval availability using availability as a priority
      * @param String $day, day id
      * @param String $interval, interval id
-     * @param Int $intervals, number of intervals
      * @return Mixed array of user ids list
      */
-    function usersByDayInt( $day, $interval, $intervals ) {
+    function usersByDayInt( $day, $interval ) {
         // Busy for users with worst availability, free for the rest
         $users = array( 'busy' => array(), 'free' => array() );
         // Select only subscribers
