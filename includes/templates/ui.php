@@ -26,8 +26,10 @@
                     <h4><?php _e( 'Left locations', 'rota' ) ?>: <?php echo count( $undone_locations ); ?></h4>
                     <?php if( count( $undone_locations ) > 0 ) : ?>
                     <ol>
-                        <?php foreach( $undone_locations as $ul ) : ?>
-                            <li><?php echo $ul['title']; ?></li>
+                        <?php foreach( $undone_locations as $ul_day => $ul_intervals ) : ?>
+                            <?php foreach( $ul_intervals as $ul_interval => $ul ) : ?>
+                                <li><?php echo $ul['title']; ?> (<small><?php echo $ul_day . '/' . $ul_interval ?></small>)</li>
+                            <?php endforeach; ?>
                         <?php endforeach; ?>
                     </ol>
                     <?php endif; ?>

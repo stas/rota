@@ -73,11 +73,13 @@ class Rota {
         $filled_deltas = array();
         // Fill required values instead of `all`
         foreach( $deltas as $dd ) {
-            $filled_deltas[ $dd['location'] ] = array();
+            if( !isset( $filled_deltas[ $dd['location'] ] ) )
+                $filled_deltas[ $dd['location'] ] = array();
             // Fill days
             if( $dd['day'] == 'all' )
-                foreach ( $days as $d ) 
-                    $filled_deltas[ $dd['location'] ][ $d['name'] ] = array();
+                foreach ( $days as $d )
+                    if( !isset( $filled_deltas[ $dd['location'] ][ $d['name'] ] ) )
+                        $filled_deltas[ $dd['location'] ][ $d['name'] ] = array();
             else
                 $filled_deltas[ $dd['location'] ][ $dd['day'] ] = array();
             
@@ -309,7 +311,7 @@ class Rota {
      */
     function doTheMath( $days, $intervals, $locations, $deltas ) {
         $users = array();
-        $undone_locations = array();
+        $undone_locations[] = array();
         $left_users = array();
         
         foreach ( $days as $d )
@@ -345,16 +347,16 @@ class Rota {
                         // Location size was achieved
                         if ( count( $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] ) >= $size )
                             // Remove the location from undone
-                            unset( $undone_locations[ $l['name'] ] );
+                            unset( $undone_locations[ $d['name'] ][ $i['name'] ] );
                         else
-                            $undone_locations[ $l['name'] ] = $l;
+                            $undone_locations[ $d['name'] ][ $i['name'] ] = $l;
                         
-                        $l_count = count( $undone_locations );
+                        $l_count = array_map( 'count', $undone_locations );
                     }
                 
                 // Cycle through all the available (free) users and try to assign them fairly across $undone_locations
                 $free_users_count = count( $userlist['free'] );
-                $l_count = count( $undone_locations );
+                $l_count = array_map( 'count', $undone_locations );
                 while( $l_count && $free_users_count > 0 ) {
                     // Randomize the locations to reduce the same location assignment probability
                     foreach ( $locations as $l ) {
@@ -378,9 +380,9 @@ class Rota {
                         // Location size was achieved
                         if ( count( $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] ) >= $size )
                             // Remove the location from undone
-                            unset( $undone_locations[ $l['name'] ] );
+                            unset( $undone_locations[ $d['name'] ][ $i['name'] ] );
                         else
-                            $undone_locations[ $l['name'] ] = $l;
+                            $undone_locations[ $d['name'] ][ $i['name'] ] = $l;
                         
                         $l_count = count( $undone_locations );
                     }
@@ -393,7 +395,7 @@ class Rota {
         
         return array(
             'users' => $users,
-            'undone_locations' => $undone_locations,
+            'undone_locations' => array_filter( $undone_locations ),
             'left_users' => array_unique( $left_users )
         );
     }
