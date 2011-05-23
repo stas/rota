@@ -21,6 +21,11 @@ class Rota {
     public static $location_key = 'rota_location';
     
     /**
+     * Rota location delta key
+     */
+    public static $delta_key = 'rota_delta';
+    
+    /**
      * Static Constructor
      */
     function init() {
@@ -49,6 +54,43 @@ class Rota {
     function get_intervals() {
         $intervals = get_option( self::$interval_key );
         return apply_filters( 'rota_intervals', $intervals );
+    }
+    
+    /**
+     * get_deltas( $days = null, $intervals = null )
+     * 
+     * Loads deltas for rota, applies filters too
+     * @param Mixed $days, a set of days, leave default `null` to skip filling
+     * @param Mixed $intervals, a set of intervals, leave default `null` to skip filling
+     * @return Mixed, set of deltas
+     */
+    function get_deltas( $days = null, $intervals = null ) {
+        $deltas = get_option( self::$delta_key );
+        // Skip filling if not required
+        if( !$days && !$intervals )
+            return $deltas;
+        
+        $filled_deltas = array();
+        // Fill required values instead of `all`
+        foreach( $deltas as $dd ) {
+            $filled_deltas[ $dd['location'] ] = array();
+            // Fill days
+            if( $dd['day'] == 'all' )
+                foreach ( $days as $d ) 
+                    $filled_deltas[ $dd['location'] ][ $d['name'] ] = array();
+            else
+                $filled_deltas[ $dd['location'] ][ $dd['day'] ] = array();
+            
+            // Fill intervals
+            if( $dd['interval'] == 'all' )
+                foreach( $filled_deltas[ $dd['location'] ] as $day => $interval )
+                    foreach ( $intervals as $i )
+                        $filled_deltas[ $dd['location'] ][ $day ][ $i['name'] ] = $dd['size'];
+            else
+                $filled_deltas[ $dd['location'] ][ $dd['day'] ][ $dd['interval'] ] = $dd['size'];
+        }
+        
+        return apply_filters( 'rota_deltas', $filled_deltas );
     }
     
     /**
@@ -131,15 +173,35 @@ class Rota {
                     $flash = sprintf( __( 'Interval: %s was not deleted.', 'rota' ), $_GET['del_interval'] );
         }
         
+        // Add delta
+        if( isset( $_POST['rota_delta_nonce'] ) && wp_verify_nonce( $_POST['rota_delta_nonce'], 'rota' ) ) {
+            if( isset( $_POST['delta'] ) && count( $_POST['delta'] ) != 0 )
+                if( self::add_delta( $_POST['delta'] ) )
+                    $flash = __( 'Deltas were updated', 'rota' );
+                else
+                    $flash = __( 'Deltas were not updated', 'rota' );
+        }
+        
+        // Delete delta
+        if( isset( $_GET['_nonce'] ) && wp_verify_nonce( $_GET['_nonce'], 'rota_delete_delta' ) ) {
+            if( isset( $_GET['del_delta'] ) && !empty( $_GET['del_delta'] ) )
+                if( self::delete_delta( $_GET['del_delta'] ) )
+                    $flash = sprintf( __( 'Delta: %s was deleted.', 'rota' ), $_GET['del_delta'] );
+                else
+                    $flash = sprintf( __( 'Delta: %s was not deleted.', 'rota' ), $_GET['del_delta'] );
+        }
+        
         $vars['rota_permalink'] = menu_page_url( 'rota', false );
         $vars['edit_permalink'] = add_query_arg( '_nonce', wp_create_nonce('rota_edit'), $vars['rota_permalink'] );
         $vars['delete_permalink'] = add_query_arg( '_nonce', wp_create_nonce('rota_delete'), $vars['rota_permalink'] );
         $vars['delete_day_permalink'] = add_query_arg( '_nonce', wp_create_nonce('rota_delete_day'), $vars['rota_permalink'] );
         $vars['delete_interval_permalink'] = add_query_arg( '_nonce', wp_create_nonce('rota_delete_interval'), $vars['rota_permalink'] );
+        $vars['delete_delta_permalink'] = add_query_arg( '_nonce', wp_create_nonce('rota_delete_delta'), $vars['rota_permalink'] );
         $vars['flash'] = $flash;
         $vars['locations'] = get_option( self::$location_key );
         $vars['days'] = self::get_days();
         $vars['intervals'] = self::get_intervals();
+        $vars['deltas'] = self::get_deltas();
         $vars['location'] = self::get_location( $location_name );
         self::template_render( 'settings', $vars );
     }
@@ -154,6 +216,7 @@ class Rota {
         $days = self::get_days();
         $intervals = self::get_intervals();
         $locations = get_option( self::$location_key );
+        $deltas = self::get_deltas( $days, $intervals );
         $results = array(
             'users' => null,
             'undone_locations' => null,
@@ -162,12 +225,13 @@ class Rota {
         
         // Do the scheduling
         if( $days && $intervals && $locations )
-            $results = self::doTheMath( $days, $intervals, $locations );
+            $results = self::doTheMath( $days, $intervals, $locations, $deltas );
         
         $vars['users'] = $results['users'];
         $vars['days'] = $days;
         $vars['intervals'] = $intervals;
         $vars['locations'] = $locations;
+        $vars['deltas'] = $deltas;
         $vars['undone_locations'] =  $results['undone_locations'];
         $vars['left_users'] =  $results['left_users'];
         $vars['today'] = strtolower( date( 'l' ) );
@@ -215,15 +279,16 @@ class Rota {
     }
     
     /**
-     * doTheMath( $days, $intervals, $locations )
+     * doTheMath( $days, $intervals, $locations, $deltas )
      *
      * Calculates the scheduling
      * @param Mixed $days, the days of the schedule
      * @param Mixed $intervals, the intervals of the schedule
      * @param Mixed $locations, the locations of the schedule
+     * @param Mixed $deltas, the deltas of the locations
      * @return Mixed, the resulted userlist with left and undone users/locations
      */
-    function doTheMath( $days, $intervals, $locations ) {
+    function doTheMath( $days, $intervals, $locations, $deltas ) {
         $users = array();
         $intervals_num = count( $intervals );
         $undone_locations = array();
@@ -408,6 +473,26 @@ class Rota {
     }
     
     /**
+     * delete_delta( $name )
+     *
+     * Find and delete an existent delta
+     * @param String $name, the ID of the delta
+     * @return Boolean, True on success, false on failure
+     */
+    function delete_delta( $name ) {
+        $name = sanitize_title( $name );
+        $deltas = self::get_deltas();
+        for( $i = 0; $i < count( $deltas ); $i++ )
+            if( $deltas[$i]['name'] == $name ) {
+                unset( $deltas[$i] );
+                update_option( self::$delta_key, $deltas );
+                return true;
+            }
+        
+        return false;
+    }
+    
+    /**
      * add_day( $d )
      * 
      * Handle day adding
@@ -461,6 +546,43 @@ class Rota {
             else {
                 $intervals[] = $interval;
                 update_option( self::$interval_key, $intervals );
+            }
+            return true;
+        } else
+            return false;
+    }
+    
+    /**
+     * add_delta( $d )
+     * 
+     * Handle delta adding
+     * @param Mixed $d, an array with delta details
+     * @return Boolean, True on success, false on failure
+     */
+    function add_delta( $d ) {
+        $deltas = get_option( self::$delta_key );
+        $delta = array(
+            'name' => null,
+            'title' => null,
+            'location' => null,
+            'day' => null,
+            'interval' => null,
+            'size' => null
+        );
+        
+        $delta['name'] = sanitize_title( time() );
+        $delta['location'] = sanitize_title( $d['location'] );
+        $delta['day'] = sanitize_title( $d['day'] );
+        $delta['interval'] = sanitize_title( $d['interval'] );
+        $delta = array_filter( $delta );
+        $delta['size'] = intval( $d['size'] );
+        
+        if( count( $delta ) == 5 ) {
+            if( !$deltas )
+                update_option( self::$delta_key, array( $delta ) );
+            else {
+                $deltas[] = $delta;
+                update_option( self::$delta_key, $deltas );
             }
             return true;
         } else
