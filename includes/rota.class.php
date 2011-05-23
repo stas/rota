@@ -384,7 +384,7 @@ class Rota {
                         else
                             $undone_locations[ $d['name'] ][ $i['name'] ] = $l;
                         
-                        $l_count = count( $undone_locations );
+                        $l_count = array_map( 'count', $undone_locations );
                     }
                 }
                 
