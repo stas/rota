@@ -75,12 +75,13 @@ class Rota {
         foreach( $deltas as $dd ) {
             if( !isset( $filled_deltas[ $dd['location'] ] ) )
                 $filled_deltas[ $dd['location'] ] = array();
+            
             // Fill days
-            if( $dd['day'] == 'all' )
+            if( $dd['day'] == 'all' ) {
                 foreach ( $days as $d )
                     if( !isset( $filled_deltas[ $dd['location'] ][ $d['name'] ] ) )
                         $filled_deltas[ $dd['location'] ][ $d['name'] ] = array();
-            else
+            } else
                 $filled_deltas[ $dd['location'] ][ $dd['day'] ] = array();
             
             // Fill intervals
@@ -88,7 +89,7 @@ class Rota {
                 foreach( $filled_deltas[ $dd['location'] ] as $day => $interval )
                     foreach ( $intervals as $i )
                         $filled_deltas[ $dd['location'] ][ $day ][ $i['name'] ] = $dd['size'];
-            else
+            else 
                 foreach( $filled_deltas[ $dd['location'] ] as $day => $interval )
                     $filled_deltas[ $dd['location'] ][ $day ][ $dd['interval'] ] = $dd['size'];
         }
@@ -282,9 +283,10 @@ class Rota {
     }
     
     /**
-     * hasDelta( $location, $day, $interval, $failsafe )
+     * hasDelta( $deltas, $location, $day, $interval, $failsafe )
      * 
      * Checks for a delta for $location, at $day with $interval, returns $failsafe if none
+     * @param Mixed $deltas
      * @param String $location
      * @param String $day
      * @param String $interval
@@ -310,101 +312,88 @@ class Rota {
      * @return Mixed, the resulted userlist with left and undone users/locations
      */
     function doTheMath( $days, $intervals, $locations, $deltas ) {
-        $users = array();
+        $users[] = array();
         $undone_locations[] = array();
         $left_users = array();
+        $left_locations = array();
         
+        /* Update locations size and populate $users */
+        foreach ( $days as $d )
+            foreach ( $intervals as $i )
+                foreach ( $locations as $l ) {
+                    // Get the delta if anyone exists
+                    $size = self::hasDelta( $deltas, $l['name'], $d['name'], $i['name'], $l['size'] );
+                    // This one to reduce notices noise
+                    if( !isset( $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] ) )
+                            $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] = array();
+                    // Update the required size
+                    $users[ $d['name'] ][ $i['name'] ][ $l['name'] ]['needed'] = $size;
+                    // Add the location as undone
+                    $undone_locations[ $d['name'] ][ $i['name'] ][ $l['name'] ] = $l;
+                }
+        
+        // Try a fair distribution
         foreach ( $days as $d )
             foreach ( $intervals as $i ) {
                 // Get the available users list
                 $userlist = self::usersByDayInt( $d['name'], $i['name'] );
-                $r = array_search( $i, $intervals ) + array_search( $d, $days );
-                // Try to assign fairly busy people to $locations
-                $busy_users_count = count( $userlist['busy'] );
+                $r = array_search( $i, $intervals ) + array_search( $d, $days ) + 1;
                 
-                $l_count = count( $locations );
-                // If none of the user is suitable, try some failures counter
-                $failures = $busy_users_count * 2;
-                while( $failures > 0 && $l_count  && $busy_users_count > 0 )
-                    foreach ( $locations as $l ){
-                        $size = self::hasDelta( $deltas, $l['name'], $d['name'], $i['name'], $l['size'] );
+                $busy_left = count( $userlist['busy'] );
+                $free_left = count( $userlist['free'] );
+                $locations_left = count( $undone_locations[ $d['name'] ][ $i['name'] ] );
+                // Fair distribution
+                while( $locations_left > 0 && ( $busy_left + $free_left ) > 0 ) {
+                    // Check the locations
+                    foreach ( $undone_locations[ $d['name'] ][ $i['name'] ] as $l ) {
+                        // Get the needed value
+                        $needed = $users[ $d['name'] ][ $i['name'] ][ $l['name'] ]['needed'];
                         
-                        // Stop if no more users left
-                        if( $busy_users_count == 0 )
-                            break;
-                        
-                        // To ignore notices set the variable
-                        if( !isset( $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] ) )
-                            $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] = array();
-                        
-                        // Skip locations with 0 rota size
-                        if( $size > 0 && count( $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] ) < $size ) {
+                        // Try to assign the users
+                        if ( $needed > 0 ) {
                             // Randomize userlist
-                            $userlist['busy'] = self::randomize( $userlist['busy'], $r * $l['size'] );
-                            // Assign user
-                            $users[ $d['name'] ][ $i['name'] ][ $l['name'] ][] = array_shift( $userlist['busy'] );
-                            $busy_users_count--;
-                        } else
-                            $failures--;
-                        
-                        // Location size was achieved
-                        if ( count( $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] ) >= $size )
-                            // Remove the location from undone
-                            unset( $undone_locations[ $d['name'] ][ $i['name'] ] );
-                        else
-                            $undone_locations[ $d['name'] ][ $i['name'] ] = $l;
-                        
-                        $l_count = array_map( 'count', $undone_locations );
+                            $userlist['busy'] = self::randomize( $userlist['busy'], $r * $needed );
+                            $userlist['free'] = self::randomize( $userlist['free'], $r * $needed );
+                            
+                            // Try the busy userlist
+                            if( count( $userlist['busy'] ) > 0 ) {
+                                // Assign user
+                                $users[ $d['name'] ][ $i['name'] ][ $l['name'] ][] = array_shift( $userlist['busy'] );
+                                // Decrement the `needed` key value
+                                $users[ $d['name'] ][ $i['name'] ][ $l['name'] ]['needed']--;
+                                // Decrement busy users
+                                $busy_left--;
+                            } elseif( count( $userlist['free'] ) > 0 ) {
+                                // Assign user
+                                $users[ $d['name'] ][ $i['name'] ][ $l['name'] ][] = array_shift( $userlist['free'] );
+                                // Decrement the `needed` key value
+                                $users[ $d['name'] ][ $i['name'] ][ $l['name'] ]['needed']--;
+                                // Decrement free users
+                                $free_left--;
+                            }
+                        } else {
+                            // Location filled, decrement one from left
+                            unset( $undone_locations[ $d['name'] ][ $i['name'] ][ $l['name'] ] );
+                            $locations_left--;
+                        }
                     }
-                
-                // Cycle through all the available (free) users and try to assign them fairly across $undone_locations
-                $free_users_count = count( $userlist['free'] );
-                $l_count = array_map( 'count', $undone_locations );
-                
-                // If none of the user is suitable, try some failures counter
-                $failures = $free_users_count * 2;
-                while( $failures > 0 && $l_count && $free_users_count > 0 ) {
-                    // Randomize the locations to reduce the same location assignment probability
-                    foreach ( $locations as $l ) {
-                        $size = self::hasDelta( $deltas, $l['name'], $d['name'], $i['name'], $l['size'] );
-                        
-                        // Stop if no more users left
-                        if( $free_users_count == 0 )
-                            break;
-                        
-                        // Randomize free users
-                        $userlist['free'] = self::randomize( $userlist['free'], $r * $l['size'] );
-                        // Check if the array was initiated already
-                        if( !isset( $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] ) )
-                            $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] = array();
-                        // Assign user to location
-                        if( $size > 0 && count( $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] ) < $size ) {
-                            $users[ $d['name'] ][ $i['name'] ][ $l['name'] ][] = array_shift( $userlist['free'] );
-                            $free_users_count--;
-                        } else
-                            // Nr. of failures left
-                            $failures--;
-                        
-                        // Location size was achieved
-                        if ( count( $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] ) >= $size )
-                            // Remove the location from undone
-                            unset( $undone_locations[ $d['name'] ][ $i['name'] ] );
-                        else
-                            $undone_locations[ $d['name'] ][ $i['name'] ] = $l;
-                        
-                        $l_count = array_map( 'count', $undone_locations );
-                    }
-                    
                 }
-                
                 // Save left out users
                 foreach( $userlist as $left )
                     $left_users = array_merge( $left_users, $left );
+                // Save left locations
+                foreach ( $locations as $l ) {
+                    $size = $users[ $d['name'] ][ $i['name'] ][ $l['name'] ]['needed'];
+                    // Cleanup
+                    unset( $users[ $d['name'] ][ $i['name'] ][ $l['name'] ]['needed'] );
+                    if( $size > 0 )
+                        $left_locations[ $l['name'] ] = $l;
+                }
             }
         
         return array(
             'users' => $users,
-            'undone_locations' => array_filter( $undone_locations ),
+            'undone_locations' => array_filter( $left_locations ),
             'left_users' => array_unique( $left_users )
         );
     }

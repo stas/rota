@@ -26,10 +26,8 @@
                     <h4><?php _e( 'Left locations', 'rota' ) ?>: <?php echo count( $undone_locations ); ?></h4>
                     <?php if( count( $undone_locations ) > 0 ) : ?>
                     <ol>
-                        <?php foreach( $undone_locations as $ul_day => $ul_intervals ) : ?>
-                            <?php foreach( $ul_intervals as $ul_interval => $ul ) : ?>
-                                <li><?php echo $ul['title']; ?> (<small><?php echo $ul_day . '/' . $ul_interval ?></small>)</li>
-                            <?php endforeach; ?>
+                        <?php foreach( $undone_locations as $ul_name => $ul ) : ?>
+                            <li><?php echo $ul['title']; ?></li>
                         <?php endforeach; ?>
                     </ol>
                     <?php endif; ?>
@@ -59,9 +57,11 @@
                                     <?php foreach ( $intervals as $i ): ?>
                                         <em class="interval vertical"><?php echo $i['title']; ?></em>
                                         <ol class="userlist">
-                                            <?php if( isset( $users[$d['name']][$i['name']][ $l['name'] ] ) && count( $users[$d['name']][$i['name']][ $l['name'] ] ) > 0 ) : ?>
+                                            <?php if( !empty( $users[$d['name']][$i['name']][ $l['name'] ] ) ) : ?>
                                                 <?php foreach ( $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] as $uid ) : ?>
-                                                    <li><?php the_author_meta( 'display_name', $uid ); ?></li>
+                                                    <li>
+                                                        <?php the_author_meta( 'display_name', $uid ); ?>
+                                                    </li>
                                                 <?php endforeach; ?>
                                             <?php else : ?>
                                                 <li class="fail"><?php _e( 'None available' ); ?></li>
