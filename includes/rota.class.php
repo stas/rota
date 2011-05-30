@@ -302,6 +302,44 @@ class Rota {
     }
     
     /**
+     * unused_first( $existing, $pool, $location )
+     * 
+     * Will reorder the $pool so an unused user in $existing day will be the first element
+     * @param Mixed $existing, an array of existing day with intervals and locations
+     * @param Mixed $pool, a pool of elements to search for unique
+     * @param String $location, the location to be checked
+     * @return Mixed $pool, modified initial $pool, or the same if nothing found
+     */
+    function unused_first( $existing, $pool, $location ) {
+        $location_users = array();
+        $found = null;
+        
+        // Find all locaton users across all intervals
+        foreach ( $existing as $i ) {
+            // Cleanup
+            unset( $i[$location]['needed'] );
+            $location_users = array_merge( $i[$location], $location_users );
+        }
+        
+        // Try to find uniques
+        $diff = array_diff( $pool, $existing );
+        
+        // Find a non-repeating one from a list of uniques
+        if( !empty( $diff ) )
+            $found = array_shift( $diff );
+        // Try to put it as first element
+        if( $found ) {
+            $found_index = array_search( $found, $pool );
+            if( $found_index != 0 ) {
+                unset( $pool[$found_index] );
+                $pool[] = $found;
+            }
+        }
+        
+        return $pool;
+    }
+    
+    /**
      * doTheMath( $days, $intervals, $locations, $deltas )
      *
      * Calculates the scheduling
@@ -357,6 +395,8 @@ class Rota {
                             
                             // Try the busy userlist
                             if( count( $userlist['busy'] ) > 0 ) {
+                                // Find a non-repeating user
+                                $userlist['busy'] = self::unused_first( $users[ $d['name'] ], $userlist['busy'], $l['name'] );
                                 // Assign user
                                 $users[ $d['name'] ][ $i['name'] ][ $l['name'] ][] = array_shift( $userlist['busy'] );
                                 // Decrement the `needed` key value
@@ -364,6 +404,8 @@ class Rota {
                                 // Decrement busy users
                                 $busy_left--;
                             } elseif( count( $userlist['free'] ) > 0 ) {
+                                // Find a non-repeating user
+                                $userlist['free'] = self::unused_first( $users[ $d['name'] ], $userlist['free'], $l['name'] );
                                 // Assign user
                                 $users[ $d['name'] ][ $i['name'] ][ $l['name'] ][] = array_shift( $userlist['free'] );
                                 // Decrement the `needed` key value
