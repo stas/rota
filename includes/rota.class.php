@@ -239,7 +239,11 @@ class Rota {
         $vars['undone_locations'] =  $results['undone_locations'];
         $vars['left_users'] =  $results['left_users'];
         $vars['today'] = strtolower( date( 'l' ) );
-        self::template_render( 'ui', $vars );
+        // If we need csv export do that
+        if( isset( $_GET['csv'] ) )
+            self::template_render( 'csv', $vars );
+        else
+            self::template_render( 'ui', $vars );
         // Not fancy, I know :)
         die();
     }
