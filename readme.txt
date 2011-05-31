@@ -1,9 +1,9 @@
 === Basic Rota Management ===
 Contributors: sushkov
-Tags: rota, management, auto, scheduling, timetable, tiff
+Tags: app, rota, management, auto, scheduling, timetable, csv, tiff
 Requires at least: WordPress 3.0
 Tested up to: WordPress 3.2
-Stable tag: 0.3
+Stable tag: 0.4
 Donate link: http://stas.nerd.ro/pub/donate/
 
 Basic Rota management based on user options.
@@ -13,7 +13,12 @@ Basic Rota management based on user options.
 Basic Rota Management was built to solve basic scheduling based on user options.
 It auto-generates a timetable/schedule based on user availability for each day.
 
-We used this to manage hundreds of volunteers during [Transilvania International Film Festival](http://www.tiff.ro/)
+We used this to manage dozens of volunteers during [Transilvania International Film Festival](http://www.tiff.ro/)
+
+_Some of the usecases can be:_
+* scheduling of timetables
+* scheduling of the conference rooms/speakers
+* scheduling of locations/volunteers for an event
 
 == Installation ==
 
@@ -24,6 +29,9 @@ Please follow the [standard installation procedure for WordPress plugins](http:/
 Before asking questions, please check the [http://github.com/stas/rota](http://github.com/stas/rota).
 
 == Changelog ==
+
+= 0.4 =
+* Added CSV export of the results
 
 = 0.3 =
 * Base algorithm mostly rewritten
