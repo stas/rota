@@ -60,6 +60,7 @@
                                             <?php if( !empty( $users[$d['name']][$i['name']][ $l['name'] ] ) ) : ?>
                                                 <?php foreach ( $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] as $uid ) : ?>
                                                     <li>
+                                                        <?php echo get_avatar( $uid, '20' ); ?>
                                                         <?php the_author_meta( 'display_name', $uid ); ?>
                                                     </li>
                                                 <?php endforeach; ?>
