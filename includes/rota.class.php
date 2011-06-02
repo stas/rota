@@ -562,7 +562,7 @@ class Rota {
      */
     function delete_delta( $name ) {
         $name = sanitize_title( $name );
-        $deltas = self::get_deltas();
+        $deltas = array_values( self::get_deltas() );
         for( $i = 0; $i < count( $deltas ); $i++ )
             if( $deltas[$i]['name'] == $name ) {
                 unset( $deltas[$i] );
