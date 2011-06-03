@@ -326,7 +326,7 @@ class Rota {
         }
         
         // Try to find uniques
-        $diff = array_diff( $pool, $existing );
+        $diff = array_diff( $pool, $location_users );
         
         // Find a non-repeating one from a list of uniques
         if( !empty( $diff ) )
@@ -336,7 +336,7 @@ class Rota {
             $found_index = array_search( $found, $pool );
             if( $found_index != 0 ) {
                 unset( $pool[$found_index] );
-                $pool[] = $found;
+                array_unshift( $pool, $found );
             }
         }
         
@@ -502,7 +502,7 @@ class Rota {
      */
     function delete_location( $name ) {
         $name = sanitize_title( $name );
-        $locations = get_option( self::$location_key );
+        $locations = array_values( get_option( self::$location_key ) );
         for( $i = 0; $i < count( $locations ); $i++ )
             if( $locations[$i]['name'] == $name ) {
                 unset( $locations[$i] );
@@ -522,7 +522,7 @@ class Rota {
      */
     function delete_day( $name ) {
         $name = sanitize_title( $name );
-        $days = self::get_days();
+        $days = array_values( self::get_days() );
         for( $i = 0; $i < count( $days ); $i++ )
             if( $days[$i]['name'] == $name ) {
                 unset( $days[$i] );
@@ -542,7 +542,7 @@ class Rota {
      */
     function delete_interval( $name ) {
         $name = sanitize_title( $name );
-        $intervals = self::get_intervals();
+        $intervals = array_values( self::get_intervals() );
         for( $i = 0; $i < count( $intervals ); $i++ )
             if( $intervals[$i]['name'] == $name ) {
                 unset( $intervals[$i] );
