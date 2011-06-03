@@ -229,6 +229,7 @@ class Rota {
             'left_users' => null
         );
         
+        /// Get users and options
         if( !empty( $uids ) )
             foreach( $uids as $uid )
                 $user_options[$uid] = self::get_user_options( $uid );
@@ -236,6 +237,21 @@ class Rota {
         // Do the scheduling
         if( $days && $intervals && $locations )
             $results = self::doTheMath( $days, $intervals, $locations, $deltas );
+        
+        // Calculate every user usages
+        if( !empty( $user_options ) && !empty( $results ) )
+                foreach ( $results as $l )
+                    foreach ( $l as $d )
+                        if( is_array( $d ) )
+                            foreach ( $d as $i )
+                                foreach( $i as $i_uids )
+                                    foreach ( $i_uids as $uid )
+                                        if( $uid ) {
+                                            if( !isset( $user_options[$uid]['counted'] ) )
+                                                $user_options[$uid]['counted'] = 1;
+                                            else
+                                                $user_options[$uid]['counted']++;
+                                        }
         
         $vars['users'] = $results['users'];
         $vars['user_options'] = $user_options;

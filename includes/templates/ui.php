@@ -34,10 +34,10 @@
                 </div>
                 <div class="grid grid-5 end">
                     <h4><?php _e( 'Left people', 'rota' ) ?>: <?php echo count( $left_users ); ?></h4>
-                    <?php if( count( $left_users ) > 0 ) : ?>
+                    <?php if( count( $left_users ) > 0 && !empty( $user_options ) ) : ?>
                     <ol>
                         <?php foreach( $left_users as $luid ) : ?>
-                            <li><?php the_author_meta( 'display_name', $luid ); ?></li>
+                            <li><?php the_author_meta( 'display_name', $luid ); ?> ( <?php echo $user_options[$luid]['counted'] ?> )</li>
                         <?php endforeach; ?>
                     </ol>
                     <?php endif; ?>
