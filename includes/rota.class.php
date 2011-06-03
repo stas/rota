@@ -240,17 +240,22 @@ class Rota {
         
         // Calculate every user usages
         if( !empty( $user_options ) && !empty( $results ) )
-                foreach ( $results as $l )
-                    foreach ( $l as $d )
-                        if( is_array( $d ) )
-                            foreach ( $d as $i )
-                                foreach( $i as $i_uids )
-                                    foreach ( $i_uids as $uid )
+                foreach ( $results['users'] as $dayname => $d )
+                    if( !empty( $d ) )
+                        foreach ( $d as $iname => $i )
+                            foreach ( $i as $lname => $l )
+                                if( !empty( $l ) )
+                                    foreach ( $l as $uid )
                                         if( $uid ) {
                                             if( !isset( $user_options[$uid]['counted'] ) )
                                                 $user_options[$uid]['counted'] = 1;
-                                            else
+                                            else {
                                                 $user_options[$uid]['counted']++;
+                                                if( $user_options[$uid]['counted'] > count( $days ) ) {
+                                                    $uid_index = array_search( $uid, $l );
+                                                    $results['users'][$dayname][$iname][$lname][$uid_index] = "$uid" . "*";
+                                                }
+                                            }
                                         }
         
         $vars['users'] = $results['users'];

@@ -18,9 +18,12 @@ if( $days && $intervals && $locations ) {
                 echo '"' . $i['title'] . '"';
                 foreach ( $days as $d ) {
                     $uids = array_values( $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] );
-                    if ( isset( $uids[$j] ) )
-                        echo ',"' . get_the_author_meta( 'display_name', $uids[$j] ) . '"';
-                    else
+                    if ( isset( $uids[$j] ) ) {
+                        if( strchr( $uids[$j], "*" ) )
+                            echo ',"' . get_the_author_meta( 'display_name', str_replace( "*", "", $uids[$j] ) ) . '~"';
+                        else
+                            echo ',"' . get_the_author_meta( 'display_name', $uids[$j] ) . '"';
+                    } else
                         echo ",n/a";
                 }
                 echo "\n";
