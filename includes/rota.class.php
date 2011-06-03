@@ -306,15 +306,15 @@ class Rota {
     }
     
     /**
-     * unused_first( $existing, $pool, $location )
+     * unused_first_location( $existing, $pool, $location )
      * 
-     * Will reorder the $pool so an unused user in $existing day will be the first element
+     * Will reorder the $location $pool so an unused user in $existing day will be the first element
      * @param Mixed $existing, an array of existing day with intervals and locations
      * @param Mixed $pool, a pool of elements to search for unique
      * @param String $location, the location to be checked
      * @return Mixed $pool, modified initial $pool, or the same if nothing found
      */
-    function unused_first( $existing, $pool, $location ) {
+    function unused_first_location( $existing, $pool, $location ) {
         $location_users = array();
         $found = null;
         
@@ -331,6 +331,46 @@ class Rota {
         // Find a non-repeating one from a list of uniques
         if( !empty( $diff ) )
             $found = array_shift( $diff );
+        // Try to put it as first element
+        if( $found ) {
+            $found_index = array_search( $found, $pool );
+            if( $found_index != 0 ) {
+                unset( $pool[$found_index] );
+                array_unshift( $pool, $found );
+            }
+        }
+        
+        return $pool;
+    }
+    
+    /**
+     * unused_first( $existing, $pool, $locations )
+     * 
+     * Will reorder the $locations $pool so an unused user in $existing day will be the first element
+     * @param Mixed $existing, an array of existing day with intervals and locations
+     * @param Mixed $pool, a pool of elements to search for unique
+     * @param Mixed $locations, the locations to be checked
+     * @return Mixed $pool, modified initial $pool, or the same if nothing found
+     */
+    function unused_first( $existing, $pool, $locations ) {
+        $day_users = array();
+        $found = null;
+        
+        // Find all locaton users across all intervals
+        foreach ( $existing as $i )
+            foreach ( $locations as $l ) {
+                // Cleanup
+                unset( $i[ $l['name'] ]['needed'] );
+                $day_users = array_merge( $i[ $l['name'] ], $day_users );
+            }
+        
+        // Try to find uniques
+        $diff = array_diff( $pool, $day_users );
+        
+        // Find a non-repeating one from a list of uniques
+        if( !empty( $diff ) )
+            $found = array_shift( $diff );
+        
         // Try to put it as first element
         if( $found ) {
             $found_index = array_search( $found, $pool );
@@ -400,7 +440,7 @@ class Rota {
                             // Try the busy userlist
                             if( count( $userlist['busy'] ) > 0 ) {
                                 // Find a non-repeating user
-                                $userlist['busy'] = self::unused_first( $users[ $d['name'] ], $userlist['busy'], $l['name'] );
+                                $userlist['busy'] = self::unused_first( $users[ $d['name'] ], $userlist['busy'], $locations );
                                 // Assign user
                                 $users[ $d['name'] ][ $i['name'] ][ $l['name'] ][] = array_shift( $userlist['busy'] );
                                 // Decrement the `needed` key value
@@ -409,7 +449,7 @@ class Rota {
                                 $busy_left--;
                             } elseif( count( $userlist['free'] ) > 0 ) {
                                 // Find a non-repeating user
-                                $userlist['free'] = self::unused_first( $users[ $d['name'] ], $userlist['free'], $l['name'] );
+                                $userlist['free'] = self::unused_first( $users[ $d['name'] ], $userlist['free'], $locations );
                                 // Assign user
                                 $users[ $d['name'] ][ $i['name'] ][ $l['name'] ][] = array_shift( $userlist['free'] );
                                 // Decrement the `needed` key value
