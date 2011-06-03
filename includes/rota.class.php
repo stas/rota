@@ -463,7 +463,7 @@ class Rota {
             // Check if user didn't exclude this interval
             if( !$uid_opts[$day][$interval] ) {
                 // Calculate priority by availability options number
-                if( count( array_filter( $uid_opts[$day] ) ) > 0 )
+                if( count( array_filter( $uid_opts[$day] ) ) > 1 )
                     $users['busy'][] = $uid; // A busy user
                 else
                     $users['free'][] = $uid; // A less busy user
