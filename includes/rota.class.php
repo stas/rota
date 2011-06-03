@@ -221,17 +221,24 @@ class Rota {
         $intervals = self::get_intervals();
         $locations = get_option( self::$location_key );
         $deltas = self::get_deltas( $days, $intervals );
+        $user_options = array();
+        $uids = get_users( array( 'fields' => 'user_id', 'role' => 'subscriber' ) );
         $results = array(
             'users' => null,
             'undone_locations' => null,
             'left_users' => null
         );
         
+        if( !empty( $uids ) )
+            foreach( $uids as $uid )
+                $user_options[$uid] = self::get_user_options( $uid );
+        
         // Do the scheduling
         if( $days && $intervals && $locations )
             $results = self::doTheMath( $days, $intervals, $locations, $deltas );
         
         $vars['users'] = $results['users'];
+        $vars['user_options'] = $user_options;
         $vars['days'] = $days;
         $vars['intervals'] = $intervals;
         $vars['locations'] = $locations;
@@ -242,6 +249,8 @@ class Rota {
         // If we need csv export do that
         if( isset( $_GET['csv'] ) )
             self::template_render( 'csv', $vars );
+        elseif( isset( $_GET['csv_users'] ) )
+            self::template_render( 'csv_users', $vars );
         else
             self::template_render( 'ui', $vars );
         // Not fancy, I know :)

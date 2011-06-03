@@ -74,6 +74,7 @@
             <div style="clear: both;"></div>
             <p class="export-csv" style="padding-left: 10px;">
                 <a href="<?php bloginfo( 'url' ); ?>/?csv" class="button"><?php _e( 'Export results in <tt>.CSV</tt>', 'rota' ); ?></a>
+                <a href="<?php bloginfo( 'url' ); ?>/?csv_users" class="button"><?php _e( 'Export users &amp; availability in <tt>.CSV</tt>', 'rota' ); ?></a>
             </p>
         </div>
         
