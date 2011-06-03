@@ -33,11 +33,15 @@
                     <?php endif; ?>
                 </div>
                 <div class="grid grid-5 end">
-                    <h4><?php _e( 'Left people', 'rota' ) ?>: <?php echo count( $left_users ); ?></h4>
-                    <?php if( count( $left_users ) > 0 && !empty( $user_options ) ) : ?>
+                    <h4><?php _e( 'People', 'rota' ) ?>: <?php echo count( $user_options ); ?></h4>
+                    <?php if( !empty( $left_users ) && !empty( $user_options ) ) : ?>
                     <ol>
-                        <?php foreach( $left_users as $luid ) : ?>
-                            <li><?php the_author_meta( 'display_name', $luid ); ?> ( <?php echo $user_options[$luid]['counted'] ?> )</li>
+                        <?php foreach( $user_options as $luid => $luo ) : ?>
+                            <li>
+                                <?php the_author_meta( 'display_name', $luid ); ?>
+                                (<?php echo $user_options[$luid]['counted'] ?>)
+                                <?php if( !in_array( $luid, $left_users ) ) echo "*"; ?>
+                            </li>
                         <?php endforeach; ?>
                     </ol>
                     <?php endif; ?>
