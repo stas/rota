@@ -20,6 +20,8 @@ _Some of the usecases can be:_
 * scheduling of the conference rooms/speakers
 * scheduling of locations/volunteers for an event
 
+[youtube http://www.youtube.com/watch?v=_VcSrp1MUdw]
+
 == Installation ==
 
 Please follow the [standard installation procedure for WordPress plugins](http://codex.wordpress.org/Managing_Plugins#Installing_Plugins).
