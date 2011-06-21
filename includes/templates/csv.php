@@ -16,11 +16,11 @@ if( $days && $intervals && $locations ) {
         foreach ( $intervals as $i ) {
             $changed = false;
             if( $size )
-                for ( $j = $size; $j > 0; $j-- ) {
+                for ( $j = $size; $j >= 0; $j-- ) {
                     echo '"' . $i['title'] . '"';
                     foreach ( $days as $d ) {
                         if( !$changed ) {
-                            $j = self::hasDelta( $deltas, $l['name'], $d['name'], $i['name'], $j );
+                            $j = self::hasDelta( $deltas, $l['name'], $d['name'], $i['name'], $j ) - 1;
                             $changed = true;
                         }
                         $uids = array_values( $users[ $d['name'] ][ $i['name'] ][ $l['name'] ] );

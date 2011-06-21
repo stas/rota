@@ -4,7 +4,7 @@ Plugin Name: Rota Management
 Plugin URI: http://wordpress.org/extend/plugins/rota/
 Description: Rota management based on user options.
 Author: Stas Sușcov
-Version: 0.4
+Version: 0.5
 Author URI: http://stas.nerd.ro/
 */
 

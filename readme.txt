@@ -3,7 +3,7 @@ Contributors: sushkov
 Tags: app, rota, management, auto, scheduling, timetable, csv, tiff
 Requires at least: WordPress 3.0
 Tested up to: WordPress 3.2
-Stable tag: 0.4
+Stable tag: 0.5
 Donate link: http://stas.nerd.ro/pub/donate/
 
 Basic Rota management based on user options.
@@ -29,6 +29,19 @@ Please follow the [standard installation procedure for WordPress plugins](http:/
 Before asking questions, please check the [http://github.com/stas/rota](http://github.com/stas/rota).
 
 == Changelog ==
+
+= 0.5 =
+* Added gravatars
+* Fixed array key values
+* Rised the criterion for busy users list
+* Fixed the deletion array index problems. Fixed a typo in unused_first
+* Added unused by day, for unique userlist per day
+* Added users and availability export
+* Added user usages stats
+* Escaped values for csv
+* Output all user stats instead of only left ones
+* Added a mark for the users with more assignments than days
+* Fixed the delta size
 
 = 0.4 =
 * Added CSV export of the results
